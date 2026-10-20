@@ -36,7 +36,7 @@ The token is stored only on your PC (encrypted with Windows DPAPI for your user 
 
 ## Prebuilt release
 
-Download the archive from [Releases](../../releases), extract it **as a whole**, and run `Qlyptra.exe`.
+Download the archive from [Releases](https://github.com/wz3k9l/Qlyptra/releases/tag/v1.0.0), extract it **as a whole**, and run `Qlyptra.exe`.
 
 Keep the `bin` folder next to `Qlyptra.exe` (it contains ffmpeg and the downloader runtime) — downloads will not work without it. The `Tracks` folder is created automatically on the first save.
 
