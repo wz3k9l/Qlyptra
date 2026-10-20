@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>Qlyptra</AssemblyName>
+    <RootNamespace>Qlyptra</RootNamespace>
+    <ApplicationIcon>Assets\qlyptra.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <Company>wz3k9l</Company>
+    <Product>Qlyptra</Product>
+    <Authors>wz3k9l</Authors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="Assets\app-art.png" Condition="Exists('Assets\app-art.png')" />
+  </ItemGroup>
+</Project>
