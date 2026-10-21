@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Qlyptra" Width="900" Height="580" MinWidth="900" MinHeight="580"
         WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="False" Background="{DynamicResource WindowBrush}" UseLayoutRounding="True" SnapsToDevicePixels="True"
-        ShowInTaskbar="True" Topmost="False" Loaded="Window_Loaded" SourceInitialized="Window_SourceInitialized" Closed="Window_Closed">
+        ShowInTaskbar="True" Topmost="False" Loaded="Window_Loaded" SourceInitialized="Window_SourceInitialized" Closing="Window_Closing" Closed="Window_Closed">
     <Border x:Name="RootBorder" Background="{DynamicResource WindowBrush}" BorderBrush="{DynamicResource BorderBrushCustom}" BorderThickness="1" SnapsToDevicePixels="True">
         <Grid Margin="1" ClipToBounds="True">
             <Grid.RowDefinitions><RowDefinition Height="50"/><RowDefinition Height="*"/></Grid.RowDefinitions>
@@ -25,8 +25,8 @@
                         <TextBlock Text="Qlyptra" FontSize="14" FontWeight="SemiBold" Foreground="#F5F5F7"/>
                         <TextBlock Text="MUSIC CLIPBOARD" FontSize="8.5" Foreground="#81828D" Margin="0,1,0,0"/>
                     </StackPanel>
-                    <Button Grid.Column="2" Content="—" Click="Hide_Click" ToolTip="Скрыть в трей" Style="{StaticResource CaptionButtonStyle}" Width="36" Height="36" Margin="1" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
-                    <Button Grid.Column="3" Content="×" Click="Close_Click" ToolTip="Закрыть приложение" Style="{StaticResource CaptionCloseButtonStyle}" Width="36" Height="36" Margin="1" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                    <Button Grid.Column="2" Content="—" Click="Minimize_Click" ToolTip="Свернуть в панель задач" Style="{StaticResource CaptionButtonStyle}" Width="36" Height="36" Margin="1" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                    <Button Grid.Column="3" Content="×" Click="Close_Click" ToolTip="Скрыть в системный трей" Style="{StaticResource CaptionCloseButtonStyle}" Width="36" Height="36" Margin="1" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
                 </Grid>
             </Border>
             <Grid Grid.Row="1">
@@ -39,19 +39,20 @@
                             <Button x:Name="ConverterNav" Tag="Active" Style="{StaticResource NavButtonStyle}" Click="ConverterNav_Click" Margin="0,0,0,5">
                                 <StackPanel Orientation="Horizontal"><TextBlock Text="♫" FontSize="19" Width="28" VerticalAlignment="Center"/><TextBlock Text="Трек и ссылка" VerticalAlignment="Center"/></StackPanel>
                             </Button>
-                            <Button x:Name="SettingsNav" Tag="Inactive" Style="{StaticResource NavButtonStyle}" Click="SettingsNav_Click">
+                            <Button x:Name="SettingsNav" Tag="Inactive" Style="{StaticResource NavButtonStyle}" Click="SettingsNav_Click" Margin="0,0,0,5">
                                 <StackPanel Orientation="Horizontal"><TextBlock Text="⚙" FontSize="16" Width="28" VerticalAlignment="Center"/><TextBlock Text="Настройки" VerticalAlignment="Center"/></StackPanel>
+                            </Button>
+                            <Button x:Name="AboutNav" Tag="Inactive" Style="{StaticResource NavButtonStyle}" Click="AboutNav_Click">
+                                <StackPanel Orientation="Horizontal"><TextBlock Text="ⓘ" FontSize="18" Width="28" VerticalAlignment="Center"/><TextBlock Text="О приложении" VerticalAlignment="Center"/></StackPanel>
                             </Button>
                         </StackPanel>
                         <StackPanel Grid.Row="3" Margin="8,0,8,0">
                             <Border Height="1" Background="{DynamicResource BorderBrushCustom}" Margin="0,0,0,12"/>
-                            <TextBlock Text="Qlyptra · 1.0.0" Foreground="#737580" FontSize="11.5"/>
-                            <TextBlock Margin="0,6,0,0" FontSize="11.5">
-                                <Run Text="made by " Foreground="#737580"/>
-                                <Hyperlink NavigateUri="https://t.me/wz3k9l" RequestNavigate="AuthorLink_RequestNavigate" Foreground="{DynamicResource AccentBrush}" TextDecorations="None">
-                                    <Run Text="wz3k9l"/>
-                                </Hyperlink>
+                            <TextBlock Text="Qlyptra · 1.1.0" Foreground="{DynamicResource MutedTextBrush}" FontSize="11.5"/>
+                            <TextBlock Foreground="{DynamicResource MutedTextBrush}" FontSize="11" Margin="0,6,0,0">
+                                <Run Text="made by "/><Hyperlink NavigateUri="https://t.me/wz3k9l" RequestNavigate="ProjectLink_RequestNavigate" Foreground="{DynamicResource AccentBrush}">wz3k9l</Hyperlink>
                             </TextBlock>
+                            <Button Content="Поддержать проект" Style="{StaticResource SecondaryButtonStyle}" Height="34" FontSize="11.5" Margin="0,10,0,0" Click="SupportProject_Click" ToolTip="Открыть информацию об авторе и поддержке"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -185,7 +186,7 @@
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                         <StackPanel>
                                             <TextBlock Text="Запуск вместе с Windows" Foreground="#F0F0F3" FontSize="13"/>
-                                            <TextBlock Text="Приложение запускается свёрнутым в системный трей" Foreground="#90919B" FontSize="11.5" Margin="0,5,12,0"/>
+                                            <TextBlock Text="Автоматический запуск при входе в Windows с правами администратора." Foreground="#90919B" FontSize="11.5" TextWrapping="Wrap" Margin="0,5,12,0"/>
                                         </StackPanel>
                                         <ToggleButton x:Name="StartupToggle" Grid.Column="1" Style="{StaticResource IosToggleStyle}" VerticalAlignment="Center" Checked="StartupToggle_Changed" Unchecked="StartupToggle_Changed"/>
                                     </Grid>
@@ -212,6 +213,39 @@
                             </StackPanel>
                         </ScrollViewer>
                         <TextBlock Grid.Row="2" Text="Горячая клавиша может быть занята другой программой. В этом случае выберите другое сочетание." Foreground="#858691" FontSize="11.5" TextWrapping="Wrap" Margin="1,13,0,0"/>
+                    </Grid>
+
+                    <Grid x:Name="AboutView" Visibility="Collapsed" Opacity="0" RenderOptions.BitmapScalingMode="HighQuality" SnapsToDevicePixels="True">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="О приложении" Foreground="{DynamicResource MainTextBrush}" FontWeight="SemiBold" FontSize="20"/>
+                            <TextBlock Text="Информация о Qlyptra, связь с автором и поддержка проекта" Foreground="{DynamicResource MutedTextBrush}" FontSize="12.5" Margin="0,7,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <ScrollViewer Grid.Row="1" Margin="0,18,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Margin="0,0,8,6">
+                                <Border Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource BorderBrushCustom}" BorderThickness="1" Padding="16,15" Margin="0,0,0,10">
+                                    <StackPanel>
+                                        <TextBlock Text="Qlyptra" Foreground="{DynamicResource MainTextBrush}" FontSize="15" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Qlyptra помогает передавать треки из Яндекс Музыки в Telegram и другие чаты. Можно получить MP3, скопировать его в буфер обмена, отправить файл или сохранить его на компьютере." Foreground="{DynamicResource MutedTextBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                                        <TextBlock Text="Версия 1.1.0" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" Margin="0,10,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource BorderBrushCustom}" BorderThickness="1" Padding="16,15" Margin="0,0,0,10">
+                                    <StackPanel>
+                                        <TextBlock Text="Автор проекта" Foreground="{DynamicResource MainTextBrush}" FontSize="14" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Автор: @wz3k9l. Есть идея, вопрос или нашли ошибку? Напишите в Telegram." Foreground="{DynamicResource MutedTextBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,12"/>
+                                        <Button Content="Связаться с автором в Telegram" Style="{StaticResource SecondaryButtonStyle}" Height="40" Click="TelegramAuthor_Click"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource BorderBrushCustom}" BorderThickness="1" Padding="16,15">
+                                    <StackPanel>
+                                        <TextBlock Text="Поддержать проект" Foreground="{DynamicResource MainTextBrush}" FontSize="14" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Поддержка помогает развивать Qlyptra, исправлять ошибки и добавлять новые возможности." Foreground="{DynamicResource MutedTextBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,12"/>
+                                        <Button Content="Поддержать автора через DonateX" Style="{StaticResource ActionButtonStyle}" Height="42" Click="DonateX_Click"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
                     </Grid>
                 </Grid>
             </Grid>

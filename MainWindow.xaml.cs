@@ -35,12 +35,15 @@ public partial class MainWindow : Window
     private bool _closingReadyPopup;
     private bool _copyingTrack;
     private int _popupSecondsRemaining = 30;
-    private bool _currentPageSettings;
+    private int _currentPage; // 0 = converter, 1 = settings, 2 = about
+    private const string DonateXUrl = "https://donatex.gg/donate/wz3k9l";
+    private const string TelegramAuthorUrl = "https://t.me/wz3k9l";
     private readonly ConcurrentDictionary<string, byte> _pendingDeletion = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, byte> _scheduledDeletion = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<FrameworkElement, ThemeColorSnapshot> _themeColorSnapshots = new();
     private DispatcherTimer? _readyTimer;
     private bool _deleteDelayComboOpen;
+    private bool _isExiting;
     private bool _suppressAppearanceEvents;
     private bool _uiReady;
     private const int ReadyPopupTimeoutSeconds = 30;
@@ -106,7 +109,24 @@ public partial class MainWindow : Window
         {
         _suppressSettingEvents = true;
         TopmostToggle.IsChecked = _settings.AlwaysOnTop;
-        StartupToggle.IsChecked = StartupManager.IsEnabled();
+        var startupTaskEnabled = StartupManager.IsEnabled();
+        if (!startupTaskEnabled && _settings.LaunchAtStartup)
+        {
+            try
+            {
+                StartupManager.SetEnabled(true);
+                startupTaskEnabled = StartupManager.IsEnabled();
+            }
+            catch (Exception ex)
+            {
+                _settings.LaunchAtStartup = false;
+                MessageBox.Show("Автозапуск не удалось перенести на запуск с правами администратора:\n\n" + ex.Message,
+                    "Qlyptra", MessageBoxButton.OK, MessageBoxImage.Warning);
+                SaveSettingsQuietly();
+            }
+        }
+        _settings.LaunchAtStartup = startupTaskEnabled;
+        StartupToggle.IsChecked = _settings.LaunchAtStartup;
         
             _suppressAppearanceEvents = true;
             try
@@ -128,10 +148,10 @@ public partial class MainWindow : Window
         _suppressSettingEvents = false;
 
         ApplyWindowSettings();
-        _currentPageSettings = false;
+        _currentPage = 0;
         ApplyTheme(_settings.Theme);
         ApplyAccentAndBrightness();
-        UpdateNavigationSelection(_currentPageSettings);
+        UpdateNavigationSelection(_currentPage);
         CreateTrayIcon();
         Microsoft.Win32.SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
         _readyTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
@@ -245,7 +265,15 @@ public partial class MainWindow : Window
         Activate();
     }
 
-    private void Hide_Click(object sender, RoutedEventArgs e) => HideToTray();
+    // The dash minimizes normally: the window remains represented on the taskbar and the tray icon stays available.
+    private void Minimize_Click(object sender, RoutedEventArgs e)
+    {
+        ShowInTaskbar = true;
+        WindowState = WindowState.Minimized;
+    }
+
+    // The X button hides the window from the taskbar but keeps Qlyptra running in the system tray.
+    private void Close_Click(object sender, RoutedEventArgs e) => HideToTray();
 
     private void HideToTray()
     {
@@ -254,16 +282,26 @@ public partial class MainWindow : Window
         if (_trayIcon is not null)
         {
             _trayIcon.BalloonTipTitle = "Qlyptra";
-            _trayIcon.BalloonTipText = "Приложение скрыто в системный трей. Открой его двойным щелчком по значку или горячей клавишей.";
+            _trayIcon.BalloonTipText = "Qlyptra работает в системном трее. Откройте окно двойным щелчком по значку или горячей клавишей.";
             _trayIcon.BalloonTipIcon = WinForms.ToolTipIcon.Info;
-            _trayIcon.ShowBalloonTip(2500);
+            _trayIcon.ShowBalloonTip(2200);
         }
     }
 
-    private void Close_Click(object sender, RoutedEventArgs e) => ExitApplication();
+    // Alt+F4 and other normal close requests also hide to tray. Exit remains available explicitly in the tray menu.
+    private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (_isExiting) return;
+        e.Cancel = true;
+        HideToTray();
+    }
+
+    private void SupportProject_Click(object sender, RoutedEventArgs e) => SwitchPage(2);
 
     private void ExitApplication()
     {
+        if (_isExiting) return;
+        _isExiting = true;
         _readyTimer?.Stop();
         DeleteCurrentSourceFile();
         _pasteMonitor.Dispose();
@@ -815,11 +853,30 @@ public partial class MainWindow : Window
         return message.Length > 230 ? message[..230] + "…" : message;
     }
 
-    private void AuthorLink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+
+    private void TelegramAuthor_Click(object sender, RoutedEventArgs e)
     {
-        try { Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true }); }
-        catch { }
+        OpenProjectLink(TelegramAuthorUrl, "Не удалось открыть Telegram автора.");
+    }
+
+    private void ProjectLink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+    {
+        OpenProjectLink(e.Uri.AbsoluteUri, null);
         e.Handled = true;
+    }
+
+    private void DonateX_Click(object sender, RoutedEventArgs e) => OpenProjectLink(DonateXUrl, null);
+
+    private static void OpenProjectLink(string url, string? missingMessage)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            MessageBox.Show(missingMessage ?? "Ссылка не настроена.", "Qlyptra", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
+        catch (Exception ex) { MessageBox.Show("Не удалось открыть ссылку: " + ex.Message, "Qlyptra", MessageBoxButton.OK, MessageBoxImage.Warning); }
     }
 
     private void TokenLink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
@@ -899,7 +956,7 @@ public partial class MainWindow : Window
             }
         }
 
-        UpdateNavigationSelection(_currentPageSettings);
+        UpdateNavigationSelection(_currentPage);
     }
 
     private static string MapBackground(string original, bool light)
@@ -1011,18 +1068,18 @@ public partial class MainWindow : Window
     }
 
 
-    private void SwitchPage(bool showSettings)
+    private void SwitchPage(int page)
     {
-        var target = showSettings ? SettingsView : ConverterView;
-        var current = _currentPageSettings ? SettingsView : ConverterView;
-        if (_currentPageSettings == showSettings && target.Visibility == Visibility.Visible)
+        var target = page switch { 1 => SettingsView, 2 => AboutView, _ => ConverterView };
+        var current = _currentPage switch { 1 => SettingsView, 2 => AboutView, _ => ConverterView };
+        if (_currentPage == page && target.Visibility == Visibility.Visible)
         {
-            UpdateNavigationSelection(showSettings);
+            UpdateNavigationSelection(page);
             return;
         }
 
-        _currentPageSettings = showSettings;
-        UpdateNavigationSelection(showSettings);
+        _currentPage = page;
+        UpdateNavigationSelection(page);
 
         current.Visibility = Visibility.Collapsed;
         current.Opacity = 0;
@@ -1035,13 +1092,15 @@ public partial class MainWindow : Window
     }
 
 
-    private void ConverterNav_Click(object sender, RoutedEventArgs e) => SwitchPage(false);
-    private void SettingsNav_Click(object sender, RoutedEventArgs e) => SwitchPage(true);
+    private void ConverterNav_Click(object sender, RoutedEventArgs e) => SwitchPage(0);
+    private void SettingsNav_Click(object sender, RoutedEventArgs e) => SwitchPage(1);
+    private void AboutNav_Click(object sender, RoutedEventArgs e) => SwitchPage(2);
 
-    private void UpdateNavigationSelection(bool settings)
+    private void UpdateNavigationSelection(int page)
     {
-        SetNavigationButton(ConverterNav, isActive: !settings);
-        SetNavigationButton(SettingsNav, isActive: settings);
+        SetNavigationButton(ConverterNav, isActive: page == 0);
+        SetNavigationButton(SettingsNav, isActive: page == 1);
+        SetNavigationButton(AboutNav, isActive: page == 2);
     }
 
     private void SetNavigationButton(Button button, bool isActive)
@@ -1263,7 +1322,7 @@ public partial class MainWindow : Window
         SetResourceBrush("BorderBrushCustom", ScaledGray(light ? 205 : 53));
         // Main window surfaces, settings cards, cover placeholders, progress bars and
         // popup panels remain bound to the resources above and react to brightness live.
-        UpdateNavigationSelection(_currentPageSettings);
+        UpdateNavigationSelection(_currentPage);
     }
 
     private static string AdjustNeutralSurface(string colorHex, bool light, double brightness)

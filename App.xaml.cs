@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -43,6 +43,7 @@ public partial class App : Application
 
         try
         {
+            StartupManager.RemoveLegacyStartupEntry();
             RenderOptions.ProcessRenderMode = RenderMode.Default;
             base.OnStartup(e);
             try { TempFileCleaner.CleanOldFiles(); } catch { }

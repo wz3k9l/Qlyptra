@@ -10,9 +10,12 @@
     <AssemblyName>Qlyptra</AssemblyName>
     <RootNamespace>Qlyptra</RootNamespace>
     <ApplicationIcon>Assets\qlyptra.ico</ApplicationIcon>
-    <Version>1.0.0</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>1.1.0</Version>
     <Company>wz3k9l</Company>
     <Product>Qlyptra</Product>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
     <Authors>wz3k9l</Authors>
   </PropertyGroup>
   <ItemGroup>
